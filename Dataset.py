@@ -1,6 +1,6 @@
+import os
 from enum import Enum
 import pandas as pd
-from pandas import Series
 
 
 class ColumnType(Enum):
@@ -15,15 +15,38 @@ class ColumnType(Enum):
     UNKNOWN = "Unknown"
 
 
-class Column:
-    def __init__(self, column: Series):
-        self.name = column.name
-        self.c_type: ColumnType = self._column_type(column)
+class Dataset:
+    def __init__(self, train: str, test: str):
 
-    def _column_type(self, column):
+        self.train_df: pd.DataFrame = self._load_data(train)
+
+        for _, series in self.train_df.items():
+            series.c_type = self._get_column_type(series)
+
+    def update_train_df(self, df: pd.DataFrame):
+        self.train_df = df
+        for _, series in self.train_df.items():
+            series.c_type = self._get_column_type(series)
+
+    def _load_data(self, path: str) -> pd.DataFrame:
+        file_extension = os.path.splitext(path)[1].lower()
+
+        if file_extension == '.csv':
+            df = pd.read_csv(path)
+        elif file_extension == '.tsv':
+            df = pd.read_csv(path, sep='\t')
+        elif file_extension == '.xls' or file_extension == '.xlsx':
+            df = pd.read_excel(path)
+        else:
+            raise ValueError(f"Unsupported file format: {file_extension}")
+
+        return df
+
+    def _get_column_type(self, column):
         cleaned_column = column.dropna()
 
         unique_values = cleaned_column.nunique()
+
         if unique_values == 2:
             return ColumnType.BINARY
 
@@ -68,5 +91,8 @@ class Column:
         # Default to unknown if none of the above conditions match
         return ColumnType.UNKNOWN
 
-    def __str__(self):
-        return f"name: {self.name}\n type: {self.c_type}"
+    def get_numeric_columns_count(self):
+        return len([s for _, s in self.train_df if s.c_type == ColumnType.NUMERICAL])
+
+    def get_columns_count(self):
+        return len(self.train_df.columns)
