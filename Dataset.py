@@ -15,13 +15,26 @@ class ColumnType(Enum):
     UNKNOWN = "Unknown"
 
 
+class DatasetSize(Enum):
+    SMALL = "SMALL"
+    MEDIUM = "MEDIUM"
+    MEDIUM_HIGH_MISSING = "MEDIUM_HIGH_MISSING"
+    LARGE = "LARGE"
+    LARGE_HIGH_MISSING = "LARGE_HIGH_MISSING"
+
+
 class Dataset:
     def __init__(self, train: str, test: str):
 
         self.train_df: pd.DataFrame = self._load_data(train)
+        self.dataset_size: DatasetSize = self._categorize_dataset_size(self.train_df)
+
+        print("Dataset size: ", self.dataset_size.value)
+        print("=====================================")
 
         for _, series in self.train_df.items():
             series.c_type = self._get_column_type(series)
+            print(f"Column: {series.name}, Type: {series.c_type}")
 
     def update_train_df(self, df: pd.DataFrame):
         self.train_df = df
@@ -90,6 +103,23 @@ class Dataset:
 
         # Default to unknown if none of the above conditions match
         return ColumnType.UNKNOWN
+
+    def _categorize_dataset_size(self, df: pd.DataFrame) -> DatasetSize:
+        # Get the number of rows and columns
+        num_rows, num_columns = df.shape
+
+        # Calculate the percentage of missing values
+        missing_values_ratio = df.isnull().sum().sum() / (num_rows * num_columns)
+
+        # Determine dataset category
+        if num_rows < 1000 and num_columns < 20 and missing_values_ratio < 0.1:
+            category = DatasetSize.SMALL
+        elif (1000 <= num_rows <= 10000 and num_columns <= 30) or (num_rows < 5000 and num_columns <= 50):
+            category = DatasetSize.MEDIUM if missing_values_ratio < 0.2 else DatasetSize.MEDIUM_HIGH_MISSING
+        else:
+            category = DatasetSize.LARGE if missing_values_ratio <= 0.3 else DatasetSize.LARGE_HIGH_MISSING
+
+        return category
 
     def get_numeric_columns_count(self):
         return len([s for _, s in self.train_df if s.c_type == ColumnType.NUMERICAL])
