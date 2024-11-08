@@ -29,6 +29,9 @@ class Dataset:
         self.train_df: pd.DataFrame = self._load_data(train, drop)
         self.dataset_size: DatasetSize = self._categorize_dataset_size(self.train_df)
 
+        for _, series in self.train_df.items():
+            series.c_type = self._get_column_type(series)
+
         if show_info:
             self._log_info()
 
@@ -121,7 +124,7 @@ class Dataset:
         return category
 
     def get_numeric_columns_count(self):
-        return len([s for _, s in self.train_df if s.c_type == ColumnType.NUMERICAL])
+        return len([s for _, s in self.train_df.items() if s.c_type == ColumnType.NUMERICAL])
 
     def get_columns_count(self):
         return len(self.train_df.columns)
@@ -131,5 +134,4 @@ class Dataset:
         print("=====================================")
 
         for _, series in self.train_df.items():
-            series.c_type = self._get_column_type(series)
             print(f"Column: {series.name}, Type: {series.c_type}")
