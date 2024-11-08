@@ -24,24 +24,20 @@ class DatasetSize(Enum):
 
 
 class Dataset:
-    def __init__(self, train: str, test: str):
+    def __init__(self, train: str, test: str, drop: [str], show_info: bool = False):
 
-        self.train_df: pd.DataFrame = self._load_data(train)
+        self.train_df: pd.DataFrame = self._load_data(train, drop)
         self.dataset_size: DatasetSize = self._categorize_dataset_size(self.train_df)
 
-        print("Dataset size: ", self.dataset_size.value)
-        print("=====================================")
-
-        for _, series in self.train_df.items():
-            series.c_type = self._get_column_type(series)
-            print(f"Column: {series.name}, Type: {series.c_type}")
+        if show_info:
+            self._log_info()
 
     def update_train_df(self, df: pd.DataFrame):
         self.train_df = df
         for _, series in self.train_df.items():
             series.c_type = self._get_column_type(series)
 
-    def _load_data(self, path: str) -> pd.DataFrame:
+    def _load_data(self, path: str, drop: [str] = None) -> pd.DataFrame:
         file_extension = os.path.splitext(path)[1].lower()
 
         if file_extension == '.csv':
@@ -52,6 +48,9 @@ class Dataset:
             df = pd.read_excel(path)
         else:
             raise ValueError(f"Unsupported file format: {file_extension}")
+
+        if drop:
+            df.drop(drop, axis=1, inplace=True)
 
         return df
 
@@ -126,3 +125,11 @@ class Dataset:
 
     def get_columns_count(self):
         return len(self.train_df.columns)
+
+    def _log_info(self):
+        print("Dataset size: ", self.dataset_size.value)
+        print("=====================================")
+
+        for _, series in self.train_df.items():
+            series.c_type = self._get_column_type(series)
+            print(f"Column: {series.name}, Type: {series.c_type}")
