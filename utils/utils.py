@@ -1,16 +1,20 @@
-def get_validated_input(message: str, options: dict):
-
+def get_validated_input(message: str, options: dict, defaults: dict = None):
     user_inputs = {}
 
-    print(f"{message} (or type 'exit' to quit)")
+    print(message)
 
     for option, expected_type in options.items():
         while True:
-            user_input = input(f"Please enter {option} (type {expected_type.__name__}): ").strip()
+            default_value = defaults.get(option) if defaults and option in defaults else None
+            default_text = f" (default is {default_value})" if default_value is not None else ""
 
-            if user_input.lower() == 'exit':
-                print("Exiting the program.")
-                return None
+            # Prompt user, showing default if available
+            user_input = input(f"{option}{default_text} (type {expected_type.__name__}): ").strip()
+
+            # Use the default value if user presses Enter
+            if user_input == "" and default_value is not None:
+                user_inputs[option] = default_value
+                break
 
             # Validate and type cast the input
             if expected_type == int:
@@ -36,6 +40,5 @@ def get_validated_input(message: str, options: dict):
 
             else:
                 print(f"Unsupported type '{expected_type.__name__}' for option '{option}'.")
-                return None
 
     return user_inputs

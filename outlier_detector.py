@@ -64,8 +64,15 @@ def lof_local_outlier_factor_outlier_detector(dataset: Dataset):
     scaler = StandardScaler()
     scaled_data = scaler.fit_transform(numerical_data)
 
-    # todo hyperparameter: what about different n_neighbors?
-    lof = LocalOutlierFactor(n_neighbors=20)
+    options = {"n_neighbors": int}
+    defaults = {"n_neighbors": 20}
+    user_inputs = get_validated_input(
+        "Local Outlier Factor algorithm will be applied to detect and remove the outliers."
+        " Please specify the hyperparameters.", options, defaults)
+
+    n_neighbors = user_inputs.get("n_neighbors", 20)
+
+    lof = LocalOutlierFactor(n_neighbors=n_neighbors)
     outlier_predictions = lof.fit_predict(scaled_data)
 
     # Remove the outliers from the original DataFrame
