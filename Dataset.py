@@ -16,11 +16,12 @@ class ColumnType(Enum):
 
 
 class DatasetSize(Enum):
-    SMALL = "SMALL"
-    MEDIUM = "MEDIUM"
-    MEDIUM_HIGH_MISSING = "MEDIUM_HIGH_MISSING"
-    LARGE = "LARGE"
-    LARGE_HIGH_MISSING = "LARGE_HIGH_MISSING"
+    TINY = "Tiny (under 1,000 rows)"
+    SMALL = "Small (1,000 - 10,000 rows)"
+    MEDIUM = "Medium (10,000 - 100,000 rows)"
+    LARGE = "Large (100,000 - 1,000,000 rows)"
+    VERY_LARGE = "Very Large (1,000,000 - 10,000,000 rows)"
+    HUGE = "Huge (over 10,000,000 rows)"
 
 
 class Dataset:
@@ -106,22 +107,26 @@ class Dataset:
         # Default to unknown if none of the above conditions match
         return ColumnType.UNKNOWN
 
-    def _categorize_dataset_size(self, df: pd.DataFrame) -> DatasetSize:
-        # Get the number of rows and columns
-        num_rows, num_columns = df.shape
+    def get_dataset_size(self, df: pd.DataFrame) -> DatasetSize:
+        total_rows = df.shape[0]
 
-        # Calculate the percentage of missing values
-        missing_values_ratio = df.isnull().sum().sum() / (num_rows * num_columns)
-
-        # Determine dataset category
-        if num_rows < 1000 and num_columns < 20 and missing_values_ratio < 0.1:
-            category = DatasetSize.SMALL
-        elif (1000 <= num_rows <= 10000 and num_columns <= 30) or (num_rows < 5000 and num_columns <= 50):
-            category = DatasetSize.MEDIUM if missing_values_ratio < 0.2 else DatasetSize.MEDIUM_HIGH_MISSING
+        if total_rows < 1000:
+            return DatasetSize.TINY
+        elif 1000 <= total_rows < 10000:
+            return DatasetSize.SMALL
+        elif 10000 <= total_rows < 100000:
+            return DatasetSize.MEDIUM
+        elif 100000 <= total_rows < 1000000:
+            return DatasetSize.LARGE
+        elif 1000000 <= total_rows < 10000000:
+            return DatasetSize.VERY_LARGE
         else:
-            category = DatasetSize.LARGE if missing_values_ratio <= 0.3 else DatasetSize.LARGE_HIGH_MISSING
+            return DatasetSize.HUGE
 
-        return category
+    def get_missing_values_ratio(self):
+        total_cells = self.train_df.size
+        missing_cells = self.train_df.isnull().sum().sum()
+        return missing_cells / total_cells
 
     def get_numeric_columns_count(self):
         return len([s for _, s in self.train_df.items() if s.c_type == ColumnType.NUMERICAL])
