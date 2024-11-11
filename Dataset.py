@@ -28,7 +28,7 @@ class Dataset:
     def __init__(self, train: str, test: str, drop: [str], show_info: bool = False):
 
         self.train_df: pd.DataFrame = self._load_data(train, drop)
-        self.dataset_size: DatasetSize = self._categorize_dataset_size(self.train_df)
+        self.dataset_size: DatasetSize = self.get_dataset_size(self.train_df)
 
         for _, series in self.train_df.items():
             series.c_type = self._get_column_type(series)
